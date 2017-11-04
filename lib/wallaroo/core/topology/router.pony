@@ -149,23 +149,13 @@ class val ProxyRouter is Equatable[ProxyRouter]
       ProxyAddress(_target_proxy_address.worker, target_id), _auth)
 
   fun routes(): Array[Consumer] val =>
-    try
-      recover [_target as Consumer] end
-    else
-      Fail()
-      recover Array[Consumer] end
-    end
+    recover [_target] end
 
   fun routes_not_in(router: Router): Array[Consumer] val =>
     if router.routes().contains(_target) then
       recover Array[Consumer] end
     else
-      try
-        recover [_target as Consumer] end
-      else
-        Fail()
-        recover Array[Consumer] end
-      end
+      recover [_target] end
     end
 
   fun update_proxy_address(pa: ProxyAddress): ProxyRouter =>
@@ -338,9 +328,6 @@ class val StepIdRouter is OmniRouter
               (true, true, latest_ts)
             end
           | let sink_id: U128 =>
-            (true, true, latest_ts)
-          else
-            Fail()
             (true, true, latest_ts)
           end
         else
@@ -713,9 +700,6 @@ class val LocalPartitionRouter[In: Any val,
           | let p: ProxyRouter =>
             p.route[D](metric_name, pipeline_time_spent, data, producer,
               i_msg_uid, frac_ids, latest_ts, metrics_id, worker_ingress_ts)
-          else
-            // No step or proxyrouter
-            (true, true, latest_ts)
           end
         else
           // There is no entry for this key!
@@ -835,8 +819,6 @@ class val LocalPartitionRouter[In: Any val,
         end
         LocalPartitionRouter[In, Key](consume new_local_map, _step_ids,
           consume new_partition_routes, _partition_function, _default_router)
-      else
-        error
       end
     else
       error
@@ -926,8 +908,6 @@ class val LocalPartitionRouter[In: Any val,
           else
             false
           end
-        else
-          false
         end
       end
       true
@@ -990,9 +970,6 @@ class val LocalStatelessPartitionRouter is StatelessPartitionRouter
       | let p: ProxyRouter =>
         p.route[D](metric_name, pipeline_time_spent, data, producer,
           i_msg_uid, frac_ids, latest_ts, metrics_id, worker_ingress_ts)
-      else
-        // No step or proxyrouter
-        (true, true, latest_ts)
       end
     else
       // Can't find route
@@ -1064,8 +1041,6 @@ class val LocalStatelessPartitionRouter is StatelessPartitionRouter
       end
       LocalStatelessPartitionRouter(_step_ids,
         consume new_partition_routes)
-    else
-      error
     end
 
   fun update_boundaries(ob: box->Map[String, OutgoingBoundary]):
@@ -1109,8 +1084,6 @@ class val LocalStatelessPartitionRouter is StatelessPartitionRouter
           else
             false
           end
-        else
-          false
         end
       end
       true

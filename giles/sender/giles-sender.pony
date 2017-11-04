@@ -424,7 +424,7 @@ actor WithDagonCoordinator
   be finished() =>
     try
       let x = _to_dagon_socket._1 as TCPConnection
-      x.writev(ExternalMsgEncoder.done_shutdown(_node_id as String))
+      x.writev(ExternalMsgEncoder.done_shutdown(_node_id))
       x.dispose()
     end
     try
@@ -447,7 +447,7 @@ actor WithDagonCoordinator
   fun _send_ready() =>
     try
       let x = _to_dagon_socket._1 as TCPConnection
-      x.writev(ExternalMsgEncoder.ready(_node_id as String))
+      x.writev(ExternalMsgEncoder.ready(_node_id))
     end
 
 //

@@ -420,7 +420,7 @@ class val StepIdRouter is OmniRouter
     consume diff
 
   fun get_outgoing_boundaries_sorted(): Array[(String, OutgoingBoundary)] =>
-    let keys = recover ref Array[String] end
+    let keys = Array[String]
     for k in _outgoing_boundaries.keys() do
       keys.push(k)
     end
@@ -649,7 +649,7 @@ trait val PartitionRouter is (Router & Equatable[PartitionRouter])
     raw_k: K, target: (Step | ProxyRouter)): PartitionRouter ?
   fun rebalance_steps_grow(boundary: OutgoingBoundary, target_worker: String,
     worker_count: USize, state_name: String, router_registry: RouterRegistry)
-  fun rebalance_steps_shrink(names_bs: Array[(String, OutgoingBoundary)],
+  fun rebalance_steps_shrink(target_workers: Array[(String, OutgoingBoundary)],
     state_name: String, router_registry: RouterRegistry)
   fun size(): USize
   fun update_boundaries(ob: box->Map[String, OutgoingBoundary]):
@@ -911,8 +911,9 @@ class val LocalPartitionRouter[In: Any val,
       Fail()
     end
 
-  fun rebalance_steps_shrink(names_bs: Array[(String, OutgoingBoundary)],
-    state_name: String, router_registry: RouterRegistry) =>
+  fun rebalance_steps_shrink(target_workers: Array[(String, OutgoingBoundary)],
+    state_name: String, router_registry: RouterRegistry)
+  =>
     let steps_to_migrate = Array[(String, OutgoingBoundary, Key, U128, Step)]
     var i: USize = 0
 
@@ -922,7 +923,7 @@ class val LocalPartitionRouter[In: Any val,
         try
           let step_id = _step_ids(key)?
           (let target_worker: String, let boundary: OutgoingBoundary) =
-            names_bs(i.mod(names_bs.size()))?
+            target_workers(i.mod(target_workers.size()))?
           steps_to_migrate.push((target_worker, boundary, key, step_id, s))
           i = i + 1
         else
@@ -931,20 +932,19 @@ class val LocalPartitionRouter[In: Any val,
       end
     end
     rebalance_steps_common(state_name, router_registry,
-      steps_to_migrate, names_bs.size())
-
+      steps_to_migrate, target_workers.size())
 
   fun rebalance_steps_common(state_name: String,
     router_registry: RouterRegistry,
     steps_to_migrate: Array[(String, OutgoingBoundary, Key, U128, Step)],
-    num_boundaries: USize) =>
+    num_boundaries: USize)
+  =>
     @printf[I32]("^^Migrating %lu steps to %d workers\n".cstring(),
       steps_to_migrate.size(), num_boundaries)
-    for (_, _, _, step_id, _) in steps_to_migrate.values() do
-      router_registry.add_to_step_waiting_list(step_id)
-    end
     for (target_worker, boundary, key, step_id, step)
-      in steps_to_migrate.values() do
+      in steps_to_migrate.values()
+    do
+      router_registry.add_to_step_waiting_list(step_id)
       step.send_state[Key](boundary, state_name, key)
       router_registry.move_stateful_step_to_proxy[Key](step_id,
         ProxyAddress(target_worker, step_id), key, state_name)

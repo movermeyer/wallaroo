@@ -370,20 +370,19 @@ actor RouterRegistry
       _resume_the_world()
     end
 
-    let names_bs: Array[(String, OutgoingBoundary)] =
+    let target_workers: Array[(String, OutgoingBoundary)] =
       match _omni_router
       | let omr: OmniRouter =>
         omr.get_outgoing_boundaries_sorted()
       | None =>
-        recover Array[(String, OutgoingBoundary)]
-        end
+        recover Array[(String, OutgoingBoundary)] end
       end
-    Invariant(names_bs.size() is _outgoing_boundaries.size())
+    Invariant(target_workers.size() == _outgoing_boundaries.size())
 
     @printf[I32]("Migrating all partitions to %d remaining workers\n".cstring(),
-      names_bs.size())
+      target_workers.size())
     for state_name in _partition_routers.keys() do
-      _migrate_all_partition_steps(state_name, names_bs)
+      _migrate_all_partition_steps(state_name, target_workers)
     end
 
   be step_migration_complete(step_id: StepId) =>
@@ -504,16 +503,17 @@ actor RouterRegistry
     end
 
   fun _migrate_all_partition_steps(state_name: String,
-    names_bs: Array[(String, OutgoingBoundary)]) =>
+    target_workers: Array[(String, OutgoingBoundary)])
+  =>
     """
     Called to initiate migrating all partition steps the set of remaining
     workers.
     """
     try
       @printf[I32]("Migrating steps for %s partition to %d workers\n".cstring(),
-        state_name.cstring(), names_bs.size())
+        state_name.cstring(), target_workers.size())
       let partition_router = _partition_routers(state_name)?
-      partition_router.rebalance_steps_shrink(names_bs, state_name, this)
+      partition_router.rebalance_steps_shrink(target_workers, state_name, this)
     end
 
 

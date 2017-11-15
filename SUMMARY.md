@@ -13,11 +13,14 @@
 * [Clustered Wallaroo](book/core-concepts/clustering.md)
 
 ## Developing with Wallaroo
-
-* [Setting up Your Environment](book/getting-started/setup.md)
-  * [MacOS Installation](book/getting-started/macos-setup.md)
-  * [Ubuntu Installation](book/getting-started/linux-setup.md)
-* [Run a Wallaroo Application](book/getting-started/run-a-wallaroo-application.md)
+* First Install
+  * [Setting Up Your Environment](book/getting-started/docker-setup.md)
+  * [Run a Wallaroo Application in Docker](book/getting-started/run-a-walllaroo-application-docker.md)
+* Installing From Source
+  * [Setting up Your Environment](book/getting-started/setup.md)
+    * [MacOS Installation](book/getting-started/macos-setup.md)
+    * [Ubuntu Installation](book/getting-started/linux-setup.md)
+  * [Run a Wallaroo Application](book/getting-started/run-a-wallaroo-application.md)
 * [Conclusion](book/getting-started/conclusion.md)
 
 <!--

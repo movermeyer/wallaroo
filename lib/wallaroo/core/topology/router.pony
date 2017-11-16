@@ -883,12 +883,23 @@ class val LocalPartitionRouter[In: Any val,
   fun rebalance_steps_grow(boundary: OutgoingBoundary, target_worker: String,
     worker_count: USize, state_name: String, router_registry: RouterRegistry)
   =>
+   let steps_to_migrate = rebalance_pure_grow(_local_map,
+    worker_count, _partition_routes, target_worker, boundary)
+
+   rebalance_steps_common(state_name, router_registry, steps_to_migrate, 1)
+
+  fun rebalance_pure_grow(local_map': Map[U128, Step] val,
+    worker_count: USize, partition_routes: Map[Key, (Step | ProxyRouter)] val,
+     target_worker: String, boundary: OutgoingBoundary):
+    Array[(String, OutgoingBoundary, Key, U128, Step)]
+  =>
+    let steps_to_migrate = Array[(String, OutgoingBoundary, Key, U128, Step)]
+
     try
       var left_to_send = PartitionRebalancer.step_count_to_send(size(),
-        _local_map.size(), worker_count - 1)
+        local_map'.size(), worker_count - 1)
       if left_to_send > 0 then
-        let steps_to_migrate = Array[(String, OutgoingBoundary, Key, U128, Step)]
-        for (key, target) in _partition_routes.pairs() do
+        for (key, target) in partition_routes.pairs() do
           if left_to_send == 0 then break end
           match target
           | let s: Step =>
@@ -898,11 +909,9 @@ class val LocalPartitionRouter[In: Any val,
           end
         end
         if left_to_send > 0 then Fail() end
-        rebalance_steps_common(state_name, router_registry,
-          steps_to_migrate, 1)
       else
-        // There is nothing to send over. Can we immediately resume processing?
-        router_registry.try_to_resume_processing_immediately()
+        // There is nothing to send over.
+        None
       end
       ifdef debug then
         Invariant(left_to_send == 0)
@@ -910,9 +919,21 @@ class val LocalPartitionRouter[In: Any val,
     else
       Fail()
     end
+    steps_to_migrate
 
   fun rebalance_steps_shrink(target_workers: Array[(String, OutgoingBoundary)],
     state_name: String, router_registry: RouterRegistry)
+  =>
+    let steps_to_migrate = rebalance_pure_shrink(_partition_routes,
+      target_workers, state_name, router_registry)
+
+    rebalance_steps_common(state_name, router_registry, steps_to_migrate, 1)
+
+  fun rebalance_pure_shrink(
+    partition_routes: Map[Key, (Step | ProxyRouter)] val,
+    target_workers: Array[(String, OutgoingBoundary)],
+    state_name: String, router_registry: RouterRegistry):
+    Array[(String, OutgoingBoundary, Key, U128, Step)]
   =>
     let steps_to_migrate = Array[(String, OutgoingBoundary, Key, U128, Step)]
     var i: USize = 0
@@ -931,14 +952,18 @@ class val LocalPartitionRouter[In: Any val,
         end
       end
     end
-    rebalance_steps_common(state_name, router_registry,
-      steps_to_migrate, target_workers.size())
+    steps_to_migrate
 
   fun rebalance_steps_common(state_name: String,
     router_registry: RouterRegistry,
     steps_to_migrate: Array[(String, OutgoingBoundary, Key, U128, Step)],
     num_boundaries: USize)
   =>
+    if (steps_to_migrate.size() == 0) then
+      // There is nothing to send over. Can we immediately resume processing?
+      router_registry.try_to_resume_processing_immediately()
+      return
+    end
     @printf[I32]("^^Migrating %lu steps to %d workers\n".cstring(),
       steps_to_migrate.size(), num_boundaries)
     for (target_worker, boundary, key, step_id, step)

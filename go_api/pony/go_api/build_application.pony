@@ -1,7 +1,11 @@
 use "collections"
 use "debug"
 use "json"
+use "net"
+use "pony-kafka"
 use "wallaroo"
+use "wallaroo/core/source"
+use "wallaroo/core/source/kafka_source"
 use "wallaroo/core/source/tcp_source"
 use "wallaroo/core/sink"
 use "wallaroo/core/sink/tcp_sink"
@@ -163,13 +167,13 @@ class _StepInfo
 
 class val _PipelineInfo
   let name: String
-  let source_config: TCPSourceConfig[GoData] val
+  let source_config: SourceConfig[GoData] val
   let components_map: Map[U64, String] val
   let partitions_map: Map[U64, w.Partition[GoData, U64]] val
   let connections: Array[_Connection] val
 
   new val create(name': String,
-    source_config': TCPSourceConfig[GoData] val,
+    source_config': SourceConfig[GoData] val,
     components_map': Map[U64, String] val,
     partitions_map': Map[U64, w.Partition[GoData, U64]] val,
     connections': Array[_Connection] val)
@@ -209,13 +213,33 @@ primitive _Partition
     end
 
 primitive _SourceConfig
-  fun from_json_ez_data(source: JsonEzData): TCPSourceConfig[GoData] val ? =>
+  fun from_json_ez_data(source: JsonEzData, env: Env): SourceConfig[GoData] val ? =>
     match source("Class")?.string()?
     | "TCPSource" =>
       let host = source("Host")?.string()?
       let port = source("Port")?.string()?
       let decoder_id = source("DecoderId")?.int()?.u64()
       TCPSourceConfig[GoData](GoFramedSourceHandler(decoder_id), host, port)
+    | "KafkaSource" =>
+      let topic = source("Topic")?.string()?
+
+      let brokers = recover trn Array[(String, I32)] end
+      for b in source("Brokers")?.array()?.values() do
+        let host = b("Host")?.string()?
+        let port = b("Port")?.int()?.i32()
+        brokers.push((host, port))
+      end
+
+      let log_level = source("LogLevel")?.string()?
+      let decoder_id = source("DecoderId")?.int()?.u64()
+      let brokers_val: Array[(String, I32)] val = consume brokers
+      match recover KafkaSourceConfigFactory(topic, brokers_val, log_level, env.out) end
+      | let kc: KafkaConfig val =>
+        KafkaSourceConfig[GoData](kc, env.root as TCPConnectionAuth,
+          GoSourceHandler(decoder_id))
+      else
+        error
+      end
     else
       error
     end
@@ -233,7 +257,7 @@ primitive _SinkConfig
     end
 
 primitive BuildApplication
-  fun from_json(json_str: String): Application val ? =>
+  fun from_json(json_str: String, env: Env): Application val ? =>
     try
       let json_doc: JsonDoc = JsonDoc
       json_doc.parse(json_str)?
@@ -247,7 +271,7 @@ primitive BuildApplication
       let pipelines_j = jez()("Pipelines")?
       let pipelines_j_array = pipelines_j.array()?
       for pipeline in pipelines_j_array.values() do
-        let source = _SourceConfig.from_json_ez_data(pipeline("Source")?)?
+        let source = _SourceConfig.from_json_ez_data(pipeline("Source")?, env)?
         let name = pipeline("Name")?.string()?
 
         let components = pipeline("Components")?

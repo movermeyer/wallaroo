@@ -11,12 +11,12 @@ actor Main
     let application_json_string = ApplicationSetup()
     Debug(application_json_string)
 
-    // try
-    //   let application = recover val
-    //     BuildApplication.from_json(application_json_string)?
-    //   end
+    try
+      let application = recover val
+        BuildApplication.from_json(application_json_string, env)?
+      end
 
-    //   Startup(env, application, "word-count")
-    // else
-    //   @printf[I32]("Couldn't build topology\n".cstring())
-    // end
+      Startup(env, application, "kafka-reverse")
+    else
+      @printf[I32]("Couldn't build topology\n".cstring())
+    end

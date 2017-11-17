@@ -10,7 +10,7 @@ type KafkaHostPort struct {
 }
 
 func MakeKafkaSourceConfig(topic string, brokers []*KafkaHostPort, logLevel string, decoderId uint64) *KafkaSourceConfig {
-	return &KafkaSourceConfig{"KafkaSourceConfig", topic, brokers, logLevel, decoderId}
+	return &KafkaSourceConfig{"KafkaSource", topic, brokers, logLevel, decoderId}
 }
 
 type KafkaSourceConfig struct {

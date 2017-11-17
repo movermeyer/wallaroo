@@ -42,7 +42,11 @@ func (ksc *KafkaSourceConfig) SourceConfigRepr() interface{} {
 	return repr.MakeKafkaSourceConfig(ksc.topic, ksc.brokersRepr(), ksc.logLevel, ksc.decoderId)
 }
 
-func (ksc *KafkaSourceConfig) AddDecoder() uint64 {
+func (ksc *KafkaSourceConfig) MakeDecoder() repr.ComponentRepresentable {
+	return makeDecoder(ksc.addDecoder())
+}
+
+func (ksc *KafkaSourceConfig) addDecoder() uint64 {
 	ksc.decoderId = wa.AddComponent(ksc.decoder)
 	return ksc.decoderId
 }

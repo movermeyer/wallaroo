@@ -11,6 +11,11 @@
     {
       "type": "local",
       "local-path": "../../pony"
+    },
+    {
+      "type": "github",
+      "repo": "WallarooLabs/pony-kafka",
+      "tag": "0.2.0"
     }
   ]
 }

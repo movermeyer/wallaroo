@@ -1,6 +1,8 @@
 package application
 
+import "wallarooapi/application/repr"
+
 type SourceConfig interface {
 	SourceConfigRepr() interface{}
-	AddDecoder() uint64
+	MakeDecoder() repr.ComponentRepresentable
 }

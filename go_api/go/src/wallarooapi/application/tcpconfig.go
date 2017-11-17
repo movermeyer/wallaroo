@@ -16,7 +16,11 @@ func MakeTCPSourceConfig(host string, port string, decoder wa.Decoder) *TCPSourc
 	return &TCPSourceConfig{host, port, decoder, 0}
 }
 
-func (tsc *TCPSourceConfig) AddDecoder() uint64 {
+func (tsc *TCPSourceConfig) MakeDecoder() repr.ComponentRepresentable {
+	return makeFramedDecoder(tsc.addDecoder())
+}
+
+func (tsc *TCPSourceConfig) addDecoder() uint64 {
 	tsc.decoderId = wa.AddComponent(tsc.decoder)
 	return tsc.decoderId
 }

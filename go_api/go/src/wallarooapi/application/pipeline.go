@@ -40,11 +40,7 @@ func (p *pipeline) repr() *repr.Pipeline {
 }
 
 func (p *pipeline) AddSourceConfig(sourceConfig SourceConfig) {
-	p.components = append(p.components, makeDecoder(sourceConfig.AddDecoder()))
-}
-
-func (p *pipeline) AddDecoder(decoderId uint64) {
-	makeDecoder(decoderId)
+	p.components = append(p.components, sourceConfig.MakeDecoder())
 }
 
 func (p *pipeline) AddToComputationMulti(fromStepId uint64, id uint64) uint64 {

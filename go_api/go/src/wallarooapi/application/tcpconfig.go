@@ -40,11 +40,15 @@ func MakeTCPSinkConfig(host string, port string, encoder wa.Encoder) *TCPSinkCon
 	return &TCPSinkConfig{host, port, encoder, 0}
 }
 
-func (tsc *TCPSinkConfig) AddEncoder() uint64 {
+func (tsc *TCPSinkConfig) MakeEncoder() repr.ComponentRepresentable {
+	return makeEncoder(tsc.addEncoder())
+}
+
+func (tsc *TCPSinkConfig) addEncoder() uint64 {
 	tsc.encoderId = wa.AddComponent(tsc.encoder)
 	return tsc.encoderId
 }
 
-func (tsc *TCPSinkConfig) Repr() *repr.TCPSinkConfig {
+func (tsc *TCPSinkConfig) SinkConfigRepr() interface{} {
 	return repr.MakeTCPSinkConfig(tsc.host, tsc.port, tsc.encoderId)
 }

@@ -60,8 +60,8 @@ func (p *pipeline) AddToStatePartition(fromStepId uint64, computationId uint64, 
 	return newStepId
 }
 
-func (p *pipeline) AddToSink(fromStepId uint64, sinkConfig *TCPSinkConfig) uint64 {
-	p.components = append(p.components, makeEncoder(sinkConfig.AddEncoder()))
+func (p *pipeline) AddToSink(fromStepId uint64, sinkConfig SinkConfig) uint64 {
+	p.components = append(p.components, sinkConfig.MakeEncoder())
 	newStepId := p.newStepId()
 	p.connections = append(p.connections, makeToSink(newStepId, fromStepId, sinkConfig))
 	return newStepId

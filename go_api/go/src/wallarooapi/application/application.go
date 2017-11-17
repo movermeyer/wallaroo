@@ -60,7 +60,7 @@ func (pb *pipelineBuilder) ToStatePartition(stateComputation wa.StateComputation
 	return makePipelineBuilder(newStepId, pb.app, pb.pipeline)
 }
 
-func (pb *pipelineBuilder) ToSink(sinkConfig *TCPSinkConfig) *pipelineBuilder {
+func (pb *pipelineBuilder) ToSink(sinkConfig SinkConfig) *pipelineBuilder {
 	newStepId := pb.pipeline.AddToSink(pb.lastStepId, sinkConfig)
 	return makePipelineBuilder(newStepId, pb.app, pb.pipeline)
 }

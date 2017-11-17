@@ -8,6 +8,7 @@ use "wallaroo/core/source"
 use "wallaroo/core/source/kafka_source"
 use "wallaroo/core/source/tcp_source"
 use "wallaroo/core/sink"
+use "wallaroo/core/sink/kafka_sink"
 use "wallaroo/core/sink/tcp_sink"
 use "wallaroo/core/state"
 use w = "wallaroo/core/topology"
@@ -93,10 +94,10 @@ class val _ToStatePartition is _Connection
 class val _ToSink is _Connection
   let _step_id: U64
   let _from_step_id: U64
-  let _sink_config: TCPSinkConfig[GoData]
+  let _sink_config: SinkConfig[GoData]
 
   new val create(step_id': U64, from_step_id': U64,
-    sink_config: TCPSinkConfig[GoData])
+    sink_config: SinkConfig[GoData])
   =>
     _step_id = step_id'
     _from_step_id = from_step_id'
@@ -112,7 +113,7 @@ class val _ToSink is _Connection
     steps_map(_from_step_id)?.to_sink(_sink_config)?
 
 primitive _ConnectionFactory
-  fun apply(connection_j: JsonEzData): _Connection ? =>
+  fun apply(connection_j: JsonEzData, env: Env): _Connection ? =>
     let step_id = connection_j("StepId")?.int()?.u64()
     let from_step_id = connection_j("FromStepId")?.int()?.u64()
     match connection_j("Class")?.string()?
@@ -135,7 +136,7 @@ primitive _ConnectionFactory
         state_builder_id, state_name, partition_id, multi_worker)
     | "ToSink" =>
       let sink_j = connection_j("Sink")?
-      let sink = _SinkConfig.from_json_ez_data(sink_j)?
+      let sink = _SinkConfig.from_json_ez_data(sink_j, env)?
       _ToSink(step_id, from_step_id, sink)
     else
       Debug("Could not create connection")
@@ -245,13 +246,36 @@ primitive _SourceConfig
     end
 
 primitive _SinkConfig
-  fun from_json_ez_data(sink: JsonEzData): TCPSinkConfig[GoData] val ? =>
+  fun from_json_ez_data(sink: JsonEzData, env: Env): SinkConfig[GoData] val ? =>
     match sink("Class")?.string()?
     | "TCPSink" =>
       let host = sink("Host")?.string()?
       let port = sink("Port")?.string()?
       let encoderId = sink("EncoderId")?.int()?.u64()
       TCPSinkConfig[GoData](GoEncoder(encoderId), host, port)
+    | "KafkaSink" =>
+      let topic = sink("Topic")?.string()?
+
+      let brokers = recover trn Array[(String, I32)] end
+      for b in sink("Brokers")?.array()?.values() do
+        let host = b("Host")?.string()?
+        let port = b("Port")?.int()?.i32()
+        brokers.push((host, port))
+      end
+
+      let log_level = sink("LogLevel")?.string()?
+      let max_produce_buffer_ms = sink("MaxProduceBufferMs")?.int()?.u64()
+      let max_message_size = sink("MaxMessageSize")?.int()?.i32()
+      let encoder_id = sink("EncoderId")?.int()?.u64()
+      let brokers_val: Array[(String, I32)] val = consume brokers
+      match recover KafkaSinkConfigFactory(topic, brokers_val, log_level,
+        max_produce_buffer_ms, max_message_size ,env.out) end
+      | let kc: KafkaConfig val =>
+        KafkaSinkConfig[GoData](GoKafkaEncoder(encoder_id), kc,
+          env.root as TCPConnectionAuth)
+      else
+        error
+      end
     else
       error
     end
@@ -305,7 +329,7 @@ primitive BuildApplication
         let connections = recover trn Array[_Connection] end
 
         for connection_j in connections_array.values() do
-          connections.push(_ConnectionFactory(connection_j)?)
+          connections.push(_ConnectionFactory(connection_j, env)?)
         end
 
         Debug("Read connections")

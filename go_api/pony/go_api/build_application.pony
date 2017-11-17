@@ -215,7 +215,7 @@ primitive _SourceConfig
       let host = source("Host")?.string()?
       let port = source("Port")?.string()?
       let decoder_id = source("DecoderId")?.int()?.u64()
-      TCPSourceConfig[GoData](GoDecoder(decoder_id), host, port)
+      TCPSourceConfig[GoData](GoFramedSourceHandler(decoder_id), host, port)
     else
       error
     end

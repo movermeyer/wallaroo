@@ -21,7 +21,7 @@ func (tsc *TCPSourceConfig) AddDecoder() uint64 {
 	return tsc.decoderId
 }
 
-func (tsc *TCPSourceConfig) Repr() *repr.TCPSourceConfig {
+func (tsc *TCPSourceConfig) SourceConfigRepr() interface{} {
 	return repr.MakeTCPSourceConfig(tsc.host, tsc.port, tsc.decoderId)
 }
 

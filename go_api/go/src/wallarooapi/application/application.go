@@ -24,7 +24,7 @@ func (app *application) repr() *repr.Application {
 	return appRepr
 }
 
-func (app *application) NewPipeline(name string, sourceConfig *TCPSourceConfig) *pipelineBuilder {
+func (app *application) NewPipeline(name string, sourceConfig SourceConfig) *pipelineBuilder {
 	p := makePipeline(name, sourceConfig)
 	app.pipelines = append(app.pipelines, p)
 	return makePipelineBuilder(0, app, p)

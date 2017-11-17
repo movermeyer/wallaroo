@@ -2,15 +2,15 @@ package application
 
 import "wallarooapi/application/repr"
 
-func makePipeline(name string, sourceConfig *TCPSourceConfig) *pipeline {
+func makePipeline(name string, sourceConfig SourceConfig) *pipeline {
 	p := &pipeline{name, sourceConfig, make([]*Partition, 0), make([]repr.ComponentRepresentable, 0), make([]repr.ConnectionRepresentable, 0)}
-	p.AddTCPSourceConfig(sourceConfig)
+	p.AddSourceConfig(sourceConfig)
 	return p
 }
 
 type pipeline struct {
 	name string
-	sourceConfig *TCPSourceConfig
+	sourceConfig SourceConfig
 	partitions []*Partition
 	components []repr.ComponentRepresentable
 	connections []repr.ConnectionRepresentable
@@ -35,11 +35,11 @@ func (p *pipeline) repr() *repr.Pipeline {
 		p_repr.AddConnection(conn.Repr())
 	}
 
-	p_repr.AddTCPSourceConfig(p.sourceConfig.Repr())
+	p_repr.AddSourceConfig(p.sourceConfig.SourceConfigRepr())
 	return p_repr
 }
 
-func (p *pipeline) AddTCPSourceConfig(sourceConfig *TCPSourceConfig) {
+func (p *pipeline) AddSourceConfig(sourceConfig SourceConfig) {
 	p.components = append(p.components, makeDecoder(sourceConfig.AddDecoder()))
 }
 
